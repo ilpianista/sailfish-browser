@@ -66,6 +66,7 @@ void DownloadManager::recvObserve(const QString message, const QVariant data)
     QString msg = dataMap.value(QStringLiteral("msg")).toString();
     QString targetPath = dataMap.value(QStringLiteral("targetPath")).toString();
     bool isSaveAsPdf = dataMap.value(QStringLiteral("saveAsPdf")).toBool();
+    bool isPrivateMode = dataMap.value(QStringLiteral("privateMode")).toBool();
     qulonglong downloadId(dataMap.value(QStringLiteral("id")).toULongLong());
     bool needPlatformTransfersUpdate = this->needPlatformTransfersUpdate(targetPath);
 
@@ -132,6 +133,9 @@ void DownloadManager::recvObserve(const QString message, const QVariant data)
         } else if (isMyApp(targetPath)) {
             finishMyAppDownload(targetPath);
         }
+        if (isPrivateMode) {
+            m_transferClient->clearTransfer(m_download2transferMap.value(downloadId));
+        }
         checkAllTransfers();
     } else if (msg == QLatin1Literal("dl-fail")) {
         if (needPlatformTransfersUpdate) {
@@ -140,6 +144,9 @@ void DownloadManager::recvObserve(const QString message, const QVariant data)
                                              QString("browser failure"));
             emit downloadStatusChanged(downloadId, DownloadStatus::Failed, data);
         }
+        if (isPrivateMode) {
+            m_transferClient->clearTransfer(m_download2transferMap.value(downloadId));
+        }
         checkAllTransfers();
     } else if (msg == QLatin1Literal("dl-cancel")) {
         if (needPlatformTransfersUpdate) {
@@ -147,6 +154,9 @@ void DownloadManager::recvObserve(const QString message, const QVariant data)
                                              TransferEngineData::TransferCanceled,
                                              QString("download canceled"));
             emit downloadStatusChanged(downloadId, DownloadStatus::Canceled, data);
+        }
+        if (isPrivateMode) {
+            m_transferClient->clearTransfer(m_download2transferMap.value(downloadId));
         }
         checkAllTransfers();
     }
